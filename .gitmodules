@@ -1,0 +1,3 @@
+[submodule "proj4_pkg/src/ar_track_alvar"]
+	path = proj4_pkg/src/ar_track_alvar
+	url = https://github.com/machinekoder/ar_track_alvar
