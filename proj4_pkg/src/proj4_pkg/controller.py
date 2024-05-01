@@ -29,27 +29,27 @@ def main():
 
     # Create the function used to call the service
     compute_ik = rospy.ServiceProxy('compute_ik', GetPositionIK)
-    
+
     # +--------------------------------------------------------+
     # | Get the orientation of the gripper where we grip
     # +--------------------------------------------------------+
-    
+
     # Denotes the position to grasp the object
     #TODO: Complete function
     # target = get_grasp_location(12)
     target = calibrate_grasp_location(12)
-    
+
     # Denotes the position when the object is lifted
     lifted = target.copy
     lifted[2] += 0.2
-    
+
 
     # +--------------------------------------------------------+
     # | Run the loop...
     # +--------------------------------------------------------+
     input('Press [ Enter ]: ')
-        
-        
+
+    # TODO: update trajectory and movement stages
     # Open gripper
     print('Opening...')
     right_gripper.open()
@@ -69,11 +69,11 @@ def main():
     movepos(lifted, compute_ik)
 
     rospy.sleep(1.0)
-    
+
     # Move back to position
     print('Placing Object... ')
     movepos(target, compute_ik)
-    
+
     # Open gripper
     print('Opening...')
     right_gripper.open()
@@ -81,15 +81,15 @@ def main():
 
 
     print('Done!')
-        
-        
+
+
 #TODO: Complete function
 def get_grasp_location(tag_number):
-    
+
     X_OFFSET = 0.2
     Y_OFFSET = 0
     Z_OFFSET = 0.1
-    
+
     # Get location of ar tag and middle of the target
     tfbuffer = tf2_ros.Buffer()
     tfListener = tf2_ros.TransformListener(tfbuffer)
@@ -101,27 +101,27 @@ def get_grasp_location(tag_number):
         print(e)
         print("Failed to get transform ...")
         exit(0)
-        
-    
+
+
     tag_pos = [getattr(trans.transform.translation, dim) for dim in ('x', 'y', 'z')]
     tag_pos[0] += X_OFFSET
     tag_pos[1] += Y_OFFSET
     tag_pos[2] += Z_OFFSET
-    
-    #TODO: Complete the grasp stuff
+
+    #TODO: Complete the grasp stuff (can fix in grasping or just change it here, the grasp should be constant back2front horizontal grip)
     grasp_loc = get_gripper_pose(obj="pawn", metric="grav")
     # grasp_loc = [tag_pos[0], tag_pos[1], tag_pos[2], 0, 0, 0, 0]
-    
+
     print("GRasp Location:")
     print(grasp_loc)
     return grasp_loc
-    
+
 def calibrate_grasp_location(tag_number):
-    
+
     X_OFFSET = 0.2
     Y_OFFSET = 0
     Z_OFFSET = 0.1
-    
+
     # Get location of ar tag and middle of the target
     tfbuffer = tf2_ros.Buffer()
     tfListener = tf2_ros.TransformListener(tfbuffer)
@@ -133,19 +133,19 @@ def calibrate_grasp_location(tag_number):
         print(e)
         print("Failed to get transform ...")
         exit(0)
-        
-    
+
+
     tag_pos = [getattr(trans.transform.translation, dim) for dim in ('x', 'y', 'z')]
     tag_pos[0] += X_OFFSET
     tag_pos[1] += Y_OFFSET
     tag_pos[2] += Z_OFFSET
-    
+
     #TODO: Complete the grasp stuff
     obj = "pawn"
     metric = "grav"
     grasp_loc = get_gripper(obj=obj, metric=metric)
     # grasp_loc = [tag_pos[0], tag_pos[1], tag_pos[2], 0, 0, 0, 0]
-    
+
     print("GRasp Location:")
     print(grasp_loc)
     return grasp_loc
