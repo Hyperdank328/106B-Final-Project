@@ -9,13 +9,14 @@ import sys
 from intera_interface import gripper as robot_gripper
 import tf2_ros as tf
 import tf.transformations as tr
+from std_msgs.msg import Float32
 
 from movement import *
 from grasping import *
 
-X_OFFSET = -0.005
-Y_OFFSET = -0.210
-Z_OFFSET = 0.115
+X_OFFSET = 0.00 # -0.005
+Y_OFFSET = 0.05 # -0.210
+Z_OFFSET = 0.10 # 0.115
 
 # grav pawn 3 y+0.015 z-0.02
 # grav pawn 4 z-0.025
@@ -24,12 +25,19 @@ metric = "rfc"
 num = 4
 obj = 'nozzle'
 
+
 def main():
     # Wait for the IK service to become available
     rospy.wait_for_service('compute_ik')
     rospy.init_node('service_query')
 
+    height_sample = []
+    def height_callback(msg):
+        print("DEBUG: ", type(msg.data), msg.data)
+        height_sample.append(msg.data)
 
+    height_sub = rospy.Subscriber('/height_averaged', Float32, height_callback)
+    
     # Set up the right gripper
     right_gripper = robot_gripper.Gripper('right_gripper')
 
@@ -47,14 +55,33 @@ def main():
     
     # Denotes the position to grasp the object
     #TODO: Complete function
-    target = get_grasp_location(9)
-    # target = calibrate_grasp_location(9)
+    # target = get_grasp_location(15)
+    # target = calibrate_grasp_location(15)
+    target = np.array([ # hardcoded from AR Tag calibration
+        0.7639558675535222, 
+        0.17803788332915643, 
+        -0.043244710353069676, 
+        0.0, 
+        0.6946583704589973, 
+        0.0, 
+        0.7193398003386512
+    ])
     
     # Denotes the position when the object is lifted
-    above = target.copy()
-    above[2] += 0.1
-    lifted = target.copy()
-    lifted[2] += 0.2
+    above = target.copy() # NOTE: Above is the new grasping position
+    above[2] += 0.0
+    lifted = above.copy()
+    lifted[2] += 0.1
+    measure = above.copy()
+    measure[0] -= 0.1
+    measure[2] += 0.05
+    measure_high = measure.copy()
+    measure_high[2] += 0.15
+    print("AR Tag:", target)
+    print("Above:", above)
+    print("Lifted:", lifted)
+    print("Measure:", measure)
+    print("High Measure:", measure_high)
     
 
     # +--------------------------------------------------------+
@@ -68,15 +95,24 @@ def main():
     right_gripper.open()
     rospy.sleep(1.0)
 
-    # Move above object
-    print('Moving above object... ')
+    print('Moving to measure position... ')
+    movepos(measure_high, compute_ik, safety=False)
+    rospy.sleep(0.1)
+    movepos(measure, compute_ik)
+
+    print('Measuring...')
+    rospy.sleep(2.0)
+    fluid_height = height_sample[-1]
+    print("measured: ", fluid_height)
+    measure_ok = input("proceed?")
+    while not measure_ok == 'y': 
+        fluid_height = height_sample[-1]
+        print("measured: ", fluid_height)
+        measure_ok = input("proceed?")
+
+    print('Moving to grasp object... ')
     movepos(above, compute_ik)
 
-    # Move to grasp location
-    print('Moving to target position... ')
-    movepos(target, compute_ik)
-
-    # Grasp object
     print('Closing...')
     right_gripper.close()
     rospy.sleep(1.0)
@@ -85,21 +121,31 @@ def main():
     print('Lifting object... ')
     movepos(lifted, compute_ik)
 
-    rospy.sleep(1.0)
+    L = 10
+    D = 6.5
+    h = 6.5 * fluid_height / 380
+    theta_0 = np.arctan(L ** 2 / 2 * D * h)
+    tehta_1 = np.arctan(L ** 2 / D * h)
+    start = above.copy()
+
+    movepos(start, compute_ik)
+    end = start.copy()
+
+    movepos(end, compute_ik)
+    movepos(lifted, compute_ik)
+    print("fluid height: ", fluid_height)
+
+    print('Lowering object... ')
+    movepos(above, compute_ik)
     
-    # Move back to position
-    print('Placing Object... ')
-    movepos(target, compute_ik)
-    
-    # Open gripper
     print('Opening...')
     right_gripper.open()
     rospy.sleep(1.0)
 
-    # Go back up
-    print('Leaving object... ')
-    movepos(lifted, compute_ik)
-
+    print('Returning to measure... ')
+    movepos(measure, compute_ik)
+    measure_high[2] += 0.1
+    movepos(measure_high, compute_ik)
 
     print('Done!')
         
@@ -165,8 +211,17 @@ def calibrate_grasp_location(tag_number):
     tag_pos[0] += X_OFFSET
     tag_pos[1] += Y_OFFSET
     tag_pos[2] += Z_OFFSET
+
+    deg = (88 / 180) * np.pi
+    transformation_matrix = np.array([
+        [np.cos(deg), 0, np.sin(deg), 0],
+        [0, 1, 0, 0],
+        [-np.sin(deg), 0, np.cos(deg), 0], 
+        [0, 0, 0, 1]
+    ])
+    quat = tr.quaternion_from_matrix(transformation_matrix)
     
-    grasp_loc = [tag_pos[0], tag_pos[1], tag_pos[2], 0, 1, 0, 0]
+    grasp_loc = [tag_pos[0], tag_pos[1], tag_pos[2], quat[0], quat[1], quat[2], quat[3]]
     
     print("Grasp Location:")
     print(grasp_loc)

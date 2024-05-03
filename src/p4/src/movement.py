@@ -26,13 +26,12 @@ def get_position(tfBuffer, tag):
         return [target_pos[0] + OFFSET_X, target_pos[1] + OFFSET_Y, target_pos[2] + OFFSET_Z]
 
 
-def movepos(target, compute_ik):
+def movepos(target, compute_ik, safety=True):
     # Construct the request
     request = GetPositionIKRequest()
     request.ik_request.group_name = "right_arm"
 
     # If a Sawyer does not have a gripper, replace '_gripper_tip' with '_wrist' instead
-    # link = "stp_022312TP99620_tip_1"
     link = "right_gripper_tip"
 
 
@@ -64,11 +63,13 @@ def movepos(target, compute_ik):
 
         # Plan IK
         plan = group.plan()
-        user_input = input("Press 'Enter' if the trajectory looks safe on RVIZ")
+        user_input = 'y'
+        if not safety:
+            user_input = input("Press 'Enter' if the trajectory looks safe on RVIZ")
             
         # Execute IK if safe
-        # if user_input == 'y':
-        group.execute(plan[1])
+        if user_input == 'y':
+            group.execute(plan[1])
             
     except rospy.ServiceException as e:
         print("Service call failed: %s"%e)

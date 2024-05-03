@@ -1,0 +1,16 @@
+<launch>
+
+  <!-- Launch the ur_robot_driver with the specified robot IP -->
+  <include file="$(find sawyer_moveit_config)/launch/sawyer_moveit.launch">
+    <arg name="electric_gripper" value="true"/>
+  </include>
+
+  <!-- Launch AR tag detection -->
+  <include file="$(find p4)/launch/sawyer_webcam_track.launch" />
+
+
+  <node name="liquid_height" pkg="perception" type="ObjectDetector.py" />
+  <node name="moveit_ik" pkg="intera_interface" type="joint_trajectory_action_server.py" />
+  <node name="height_sample" pkg="p4" type="height_sample.py" />
+
+</launch>
