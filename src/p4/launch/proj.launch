@@ -2,6 +2,7 @@
 
   <!-- Launch the ur_robot_driver with the specified robot IP -->
   <include file="$(find sawyer_moveit_config)/launch/sawyer_moveit.launch">
+    <!-- <arg name="config" value="$(find p4)/launch/proj.rviz" /> -->
     <arg name="electric_gripper" value="true"/>
   </include>
 

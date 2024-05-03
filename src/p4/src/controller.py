@@ -25,15 +25,15 @@ metric = "rfc"
 num = 4
 obj = 'nozzle'
 
-
 def main():
     # Wait for the IK service to become available
     rospy.wait_for_service('compute_ik')
     rospy.init_node('service_query')
 
+    half = 1 # TODO: CHANGE IT
     height_sample = []
     def height_callback(msg):
-        print("DEBUG: ", type(msg.data), msg.data)
+        # print("DEBUG: ", type(msg.data), msg.data)
         height_sample.append(msg.data)
 
     height_sub = rospy.Subscriber('/height_averaged', Float32, height_callback)
@@ -89,65 +89,57 @@ def main():
     # +--------------------------------------------------------+
     # input('Press [ Enter ]: ')
         
-        
-    # Open gripper
-    print('Opening...')
-    right_gripper.open()
-    rospy.sleep(1.0)
+    if half < 1:
+        # Open gripper
+        print('Opening...')
+        right_gripper.open()
+        rospy.sleep(1.0)
 
-    print('Moving to measure position... ')
-    movepos(measure_high, compute_ik, safety=False)
-    rospy.sleep(0.1)
-    movepos(measure, compute_ik)
+        print('Moving to measure position... ')
+        movepos(measure_high, compute_ik, safety=False)
+        rospy.sleep(0.1)
+        movepos(measure, compute_ik)
 
-    print('Measuring...')
-    rospy.sleep(2.0)
-    fluid_height = height_sample[-1]
-    print("measured: ", fluid_height)
-    measure_ok = input("proceed?")
-    while not measure_ok == 'y': 
+        print('Measuring...')
+        rospy.sleep(2.0)
         fluid_height = height_sample[-1]
         print("measured: ", fluid_height)
         measure_ok = input("proceed?")
+        while not measure_ok == 'y': 
+            fluid_height = height_sample[-1]
+            print("measured: ", fluid_height)
+            measure_ok = input("proceed?")
 
-    print('Moving to grasp object... ')
-    movepos(above, compute_ik)
+        print('Moving to grasp object... ')
+        movepos(above, compute_ik)
 
-    print('Closing...')
-    right_gripper.close()
-    rospy.sleep(1.0)
+        print('Closing...')
+        right_gripper.close()
+        rospy.sleep(1.0)
 
-    # Lift object
-    print('Lifting object... ')
-    movepos(lifted, compute_ik)
+        # Lift object
+        print('Lifting object... ')
+        movepos(lifted, compute_ik)
 
-    L = 10
-    D = 6.5
-    h = 6.5 * fluid_height / 380
-    theta_0 = np.arctan(L ** 2 / 2 * D * h)
-    tehta_1 = np.arctan(L ** 2 / D * h)
-    start = above.copy()
+        print("fluid height: ", fluid_height)
 
-    movepos(start, compute_ik)
-    end = start.copy()
+    else:
+        print('End pouring... ')
+        movepos(lifted, compute_ik)
 
-    movepos(end, compute_ik)
-    movepos(lifted, compute_ik)
-    print("fluid height: ", fluid_height)
+        print('Lowering object... ')
+        movepos(above, compute_ik)
+        
+        print('Opening...')
+        right_gripper.open()
+        rospy.sleep(1.0)
 
-    print('Lowering object... ')
-    movepos(above, compute_ik)
-    
-    print('Opening...')
-    right_gripper.open()
-    rospy.sleep(1.0)
+        print('Returning to measure... ')
+        movepos(measure, compute_ik)
+        measure_high[2] += 0.1
+        movepos(measure_high, compute_ik)
 
-    print('Returning to measure... ')
-    movepos(measure, compute_ik)
-    measure_high[2] += 0.1
-    movepos(measure_high, compute_ik)
-
-    print('Done!')
+        print('Done!')
         
         
 #TODO: Complete function
@@ -229,3 +221,47 @@ def calibrate_grasp_location(tag_number):
 
 if __name__ == '__main__':
     main()
+
+# def euler_to_quaternion(yaw, pitch, roll):
+    #     qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+    #     qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
+    #     qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
+    #     qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+    #     return [qx, qy, qz, qw]
+
+    # def helper_xroll(deg):
+    #     # deg = (deg / 180) * np.pi
+    #     transformation_matrix = np.array([
+    #         [1, 0, 0, 0],
+    #         [0, np.cos(deg), -np.sin(deg), 0],
+    #         [0, np.sin(deg), np.cos(deg), 0], 
+    #         [0, 0, 0, 1]
+    #     ])
+    #     # transformation_matrix = np.array([
+    #     #     [np.cos(deg), -np.sin(deg), 0, 0],
+    #     #     [np.sin(deg), np.cos(deg), 0, 0], 
+    #     #     [0, 0, 1, 0],
+    #     #     [0, 0, 0, 1]
+    #     # ])
+    #     return tr.quaternion_from_matrix(transformation_matrix)
+        
+
+    # L = 10
+    # D = 6.5
+    # # h = 6.5 * fluid_height / 380
+    # h = 3
+    # theta_0 = np.pi / 2 # -np.arctan(L ** 2 / 2 * D * h)
+    # theta_1 = np.pi # -np.arctan(L ** 2 / D * h)
+    # print("ANGLES: ", theta_0, theta_1)
+
+    # # start = lifted.copy()
+    # quat = helper_xroll(theta_0)
+    # start = [lifted[0], lifted[1], lifted[2], quat[0], quat[1], quat[2], quat[3]]
+    # print('Going to initial pouring angle... ')
+    # movepos(start, compute_ik, safety=False)
+
+    # # end = start.copy()
+    # quat = helper_xroll(theta_1)
+    # end = [lifted[0], lifted[1], lifted[2], quat[0], quat[1], quat[2], quat[3]]
+    # print('Pouring... ')
+    # movepos(end, compute_ik, safety=False)
