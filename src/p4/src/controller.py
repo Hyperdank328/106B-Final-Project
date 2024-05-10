@@ -222,46 +222,45 @@ def calibrate_grasp_location(tag_number):
 if __name__ == '__main__':
     main()
 
-# def euler_to_quaternion(yaw, pitch, roll):
-    #     qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
-    #     qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
-    #     qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
-    #     qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
-    #     return [qx, qy, qz, qw]
+def euler_to_quaternion(yaw, pitch, roll):
+        qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+        qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
+        qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
+        qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+        return [qx, qy, qz, qw]
 
-    # def helper_xroll(deg):
-    #     # deg = (deg / 180) * np.pi
-    #     transformation_matrix = np.array([
-    #         [1, 0, 0, 0],
-    #         [0, np.cos(deg), -np.sin(deg), 0],
-    #         [0, np.sin(deg), np.cos(deg), 0], 
-    #         [0, 0, 0, 1]
-    #     ])
-    #     # transformation_matrix = np.array([
-    #     #     [np.cos(deg), -np.sin(deg), 0, 0],
-    #     #     [np.sin(deg), np.cos(deg), 0, 0], 
-    #     #     [0, 0, 1, 0],
-    #     #     [0, 0, 0, 1]
-    #     # ])
-    #     return tr.quaternion_from_matrix(transformation_matrix)
+    def helper_xroll(deg):
+        # deg = (deg / 180) * np.pi
+        transformation_matrix = np.array([
+            [1, 0, 0, 0],
+            [0, np.cos(deg), -np.sin(deg), 0],
+            [0, np.sin(deg), np.cos(deg), 0], 
+            [0, 0, 0, 1]
+        ])
+        # transformation_matrix = np.array([
+        #     [np.cos(deg), -np.sin(deg), 0, 0],
+        #     [np.sin(deg), np.cos(deg), 0, 0], 
+        #     [0, 0, 1, 0],
+        #     [0, 0, 0, 1]
+        # ])
+        return tr.quaternion_from_matrix(transformation_matrix)
         
 
-    # L = 10
-    # D = 6.5
-    # # h = 6.5 * fluid_height / 380
-    # h = 3
-    # theta_0 = np.pi / 2 # -np.arctan(L ** 2 / 2 * D * h)
-    # theta_1 = np.pi # -np.arctan(L ** 2 / D * h)
-    # print("ANGLES: ", theta_0, theta_1)
+    L = 10
+    D = 6.5
+    h = 6.5 * fluid_height / 380
+    theta_0 = -np.arctan(L ** 2 / 2 * D * h)
+    theta_1 = -np.arctan(L ** 2 / D * h)
+    print("ANGLES: ", theta_0, theta_1)
 
-    # # start = lifted.copy()
-    # quat = helper_xroll(theta_0)
-    # start = [lifted[0], lifted[1], lifted[2], quat[0], quat[1], quat[2], quat[3]]
-    # print('Going to initial pouring angle... ')
-    # movepos(start, compute_ik, safety=False)
+    # start = lifted.copy()
+    quat = helper_xroll(theta_0)
+    start = [lifted[0], lifted[1], lifted[2], quat[0], quat[1], quat[2], quat[3]]
+    print('Going to initial pouring angle... ')
+    movepos(start, compute_ik, safety=False)
 
-    # # end = start.copy()
-    # quat = helper_xroll(theta_1)
-    # end = [lifted[0], lifted[1], lifted[2], quat[0], quat[1], quat[2], quat[3]]
-    # print('Pouring... ')
-    # movepos(end, compute_ik, safety=False)
+    # end = start.copy()
+    quat = helper_xroll(theta_1)
+    end = [lifted[0], lifted[1], lifted[2], quat[0], quat[1], quat[2], quat[3]]
+    print('Pouring... ')
+    movepos(end, compute_ik, safety=False)
